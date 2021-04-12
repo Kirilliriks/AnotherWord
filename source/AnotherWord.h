@@ -24,6 +24,7 @@ public:
     void update(float deltaTime);
     void draw(float deltaTime);
     void loadFile(const std::string& path);
+    void saveFile(const std::string& path);
     void clearBuffers();
 private:
     void handleInput(float deltaTime);
@@ -49,6 +50,8 @@ private:
     float keyTime;
     INPUT_RECORD inputRecord{};
     DWORD keyRead;
+    // File
+    std::string fileName; // Название текущего файла
     // Buffers
     std::vector<std::string> strings;
     wchar_t *charBuffer;

@@ -14,14 +14,18 @@ AnotherWord::AnotherWord() {
     lastKey = 0;
     keyTime = 0;
     keyRead = 0;
+    fileName = "";
 }
 
 AnotherWord::~AnotherWord() {
     delete screen;
+    delete[] charBuffer;
+    delete[] colorBuffer;
 }
 
 void AnotherWord::start() {
-    loadFile("test.txt");
+    fileName = "test.txt";
+    loadFile(fileName);
     while (!needClose){
         float deltaTime = deltaTimer.getDelta();
         update(deltaTime);
@@ -41,6 +45,19 @@ void AnotherWord::loadFile(const std::string& path) {
         strings.push_back(data);
     }
     in.close();
+}
+
+void AnotherWord::saveFile(const std::string& path){
+    std::ofstream out(path);
+    if (!out.is_open()){
+        out.close();
+        return;
+    }
+    for (auto &string : strings){
+        out << string;
+        out << std::endl;
+    }
+    out.close();
 }
 
 void AnotherWord::update(const float deltaTime) {
@@ -226,6 +243,7 @@ void AnotherWord::handleKeyboard(const float deltaTime) {
             clearChar();
             break;
         case VK_ESCAPE:
+            saveFile(fileName);
             exit(0);
         default:
             if (!inputRecord.Event.KeyEvent.bKeyDown) break;
