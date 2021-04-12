@@ -11,14 +11,19 @@ Screen::Screen(const int nWidth, const int nHeight) {
     maxSize = Vector(width, height);
     cursorPos = Vector(15, 0);
     console = GetStdHandle(STD_OUTPUT_HANDLE);
+    inputHandle = GetStdHandle(STD_INPUT_HANDLE);
     if (console == INVALID_HANDLE_VALUE)
         throw std::runtime_error("Invalid handle");
     SMALL_RECT rectWindow = { 0, 0, (short)width, (short)height};
-    DWORD fwMode = ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT;
-    SetConsoleMode(console, fwMode);
     SetConsoleScreenBufferSize(console, {(SHORT)maxSize.x, (SHORT)maxSize.y});
     SetConsoleWindowInfo(console, true, &rectWindow);
     SetConsoleTitleA("AnotherWord");
+    DWORD fwMode = ENABLE_EXTENDED_FLAGS;
+    if (!SetConsoleMode(inputHandle, fwMode))
+        throw std::runtime_error("ConsoleMode error");
+    fwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
+    if (!SetConsoleMode(inputHandle, fwMode))
+        throw std::runtime_error("ConsoleMode error");
 }
 
 void Screen::draw(wchar_t *charBuffer, WORD *colorBuffer) {
@@ -47,6 +52,4 @@ HANDLE *Screen::getConsole() {
     return &console;
 }
 
-Screen::~Screen() {
-
-}
+Screen::~Screen() = default;

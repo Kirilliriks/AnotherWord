@@ -26,6 +26,7 @@ private:
     Vector maxSize;
     Vector cursorPos;
     HANDLE console;
+    HANDLE inputHandle;
     DWORD dwordBytes;
 };
 

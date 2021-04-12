@@ -13,7 +13,7 @@ AnotherWord::AnotherWord() {
     needClose = false;
     lastKey = 0;
     keyTime = 0;
-    keyRead = 0;
+    events = 0;
     fileName = "";
 }
 
@@ -95,12 +95,15 @@ void AnotherWord::handleInput(const float deltaTime) {
             lastKey = 0;
         }
     }
-    GetNumberOfConsoleInputEvents(input, &keyRead);
-    if (keyRead == 0) return;
-    if (ReadConsoleInput(input, &inputRecord, 1, &keyRead)){
+    GetNumberOfConsoleInputEvents(input, &events);
+    if (events == 0) return;
+    if (ReadConsoleInput(input, &inputRecord, 1, &events)){
         switch(inputRecord.EventType) {
             case KEY_EVENT:
                 handleKeyboard(deltaTime);
+                break;
+            case MOUSE_EVENT:
+                handleMouse(deltaTime);
                 break;
         }
         FlushConsoleInputBuffer(input);
@@ -196,6 +199,13 @@ void AnotherWord::moveCursor(Vector moveVector){
     }
 
     screen->moveCursor(moveVector);
+}
+
+void AnotherWord::handleMouse(const float deltaTime) {
+    if (inputRecord.Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
+        Vector moveVector = Vector(inputRecord.Event.MouseEvent.dwMousePosition.X, inputRecord.Event.MouseEvent.dwMousePosition.Y);
+        moveCursor(moveVector);
+    }
 }
 
 void AnotherWord::handleKeyboard(const float deltaTime) {

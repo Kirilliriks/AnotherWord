@@ -27,8 +27,10 @@ public:
     void saveFile(const std::string& path);
     void clearBuffers();
 private:
+    // Методя для обработки ввода
     void handleInput(float deltaTime);
     void handleKeyboard(float deltaTime);
+    void handleMouse(float deltaTime);
     // Методы для взаимодействия с текстом
     void writeChar(char ch);
     void clearChar();
@@ -49,7 +51,7 @@ private:
     Timer deltaTimer;
     float keyTime;
     INPUT_RECORD inputRecord{};
-    DWORD keyRead;
+    DWORD events;
     // File
     std::string fileName; // Название текущего файла
     // Buffers
