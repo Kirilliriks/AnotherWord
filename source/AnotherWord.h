@@ -24,7 +24,8 @@ class AnotherWord {
 public:
     enum State{
         EDITOR,
-        OPEN_FILE
+        OPEN_FILE,
+        NEW_FILE
     };
 
     AnotherWord();

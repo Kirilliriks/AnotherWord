@@ -81,30 +81,34 @@ void AnotherWord::prepareOpenFile() {
 
 void AnotherWord::draw(const float deltaTime) {
     clearBuffers();
-    int stringY;
-    for (int y = 1; y < screenSize.y; y++) {
-        stringY = screenOffset.y + y - 1;
-        if (stringY >= strings.size()) break;
-        for (int x = 0; x < screenSize.x; x++) {
-            int xPos = x + screenOffset.x;
-            if (xPos >= strings[stringY].length()) break;
-            char ch = strings[stringY].at(xPos);
-            if (ch == '\0') continue;
-            charBuffer[x + y * screenSize.x] = ch;
-            colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Black;
+    if (state == State::EDITOR) {
+        int stringY;
+        for (int y = 1; y < screenSize.y; y++) {
+            stringY = screenOffset.y + y - 1;
+            if (stringY >= strings.size()) break;
+            for (int x = 0; x < screenSize.x; x++) {
+                int xPos = x + screenOffset.x;
+                if (xPos >= strings[stringY].length()) break;
+                char ch = strings[stringY].at(xPos);
+                if (ch == '\0') continue;
+                charBuffer[x + y * screenSize.x] = ch;
+                colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Black;
+            }
         }
     }
 
     // DrawUI
     drawLine(' ', 0, 0, screenSize.x - 1, 0, Color::White, BackgroundColor::Purple);
     drawString(lastMessage, screenSize.x - lastMessage.length(), 0, Color::White, BackgroundColor::LightBlue);
+    drawString("Current: " + fileName, screenSize.x - lastMessage.length() - 10 - fileName.length(), 0, Color::White, BackgroundColor::Cyan);
 
     for (Button *button : buttons){
         button->draw(this);
     }
     //
 
-    if (state == State::OPEN_FILE){
+    if (state != State::EDITOR){
+        drawString("[Enter file name]", enterNamePosition.x, enterNamePosition.y - 1, Color::White, BackgroundColor::Black);
         drawString(fileName, enterNamePosition.x, enterNamePosition.y, Color::White, BackgroundColor::Black);
     }
 
@@ -125,7 +129,7 @@ void AnotherWord::handleInput(const float deltaTime) {
     if (ReadConsoleInput(input, &inputRecord, 1, &events)){
         if (handleButton(deltaTime)) return; // Если была нажата кнопка меню то не обрабатываем остальные входные данные
         if (lastKey == inputRecord.Event.KeyEvent.wVirtualKeyCode) return;
-        if (state == State::OPEN_FILE){
+        if (state != State::EDITOR){
             handleFileName();
             return;
         }
@@ -143,8 +147,15 @@ void AnotherWord::handleInput(const float deltaTime) {
 void AnotherWord::handleFileName() {
     switch(inputRecord.Event.KeyEvent.wVirtualKeyCode) {
         case VK_RETURN: // Пользователь закончил ввод имени файла
+            switch(state){
+                case OPEN_FILE:
+                    loadFile(fileName);
+                    break;
+                case NEW_FILE:
+                    saveFile(fileName);
+                    break;
+            }
             state = State::EDITOR;
-            loadFile(fileName);
             break;
         case VK_BACK:
             clearChar();
@@ -220,7 +231,7 @@ Vector AnotherWord::getCursorPos() {
 }
 
 void AnotherWord::writeChar(const char ch) {
-    if (state == State::OPEN_FILE){
+    if (state != State::EDITOR){
         fileName.push_back(ch);
         moveCursor(Vector(1, 0));
         return;
@@ -232,7 +243,7 @@ void AnotherWord::writeChar(const char ch) {
 }
 
 void AnotherWord::clearChar(){
-    if (state == State::OPEN_FILE){
+    if (state != State::EDITOR){
         if (fileName.length() >= 1) fileName.erase(fileName.length() - 1);
         moveCursor(Vector(-1, 0));
         return;
@@ -320,7 +331,12 @@ void AnotherWord::loadFile(const std::string& path) {
 }
 
 void AnotherWord::saveFile(const std::string& path){
-    if (fileName.empty()) return;
+    if (fileName.empty()) {
+        lastMessage = "Enter new file name";
+        state = State::NEW_FILE;
+        setCursorPosition(enterNamePosition);
+        return;
+    }
 
     std::ofstream out(path);
     if (!out.is_open()){
@@ -336,7 +352,6 @@ void AnotherWord::saveFile(const std::string& path){
 }
 
 void AnotherWord::closeCurrent() {
-    saveFile(fileName);
     strings.clear();
     fileName.clear();
     lastMessage = "File closed";
