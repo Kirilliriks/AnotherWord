@@ -21,6 +21,7 @@ public:
     Vector getMaxSize();
     Vector getCursorPos();
     HANDLE *getConsole();
+    HANDLE *getInput();
 private:
     short width, height;
     Vector maxSize;

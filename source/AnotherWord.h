@@ -9,37 +9,44 @@
 #include <string>
 #include <istream>
 #include <chrono>
+#include <functional>
 #include <windows.h>
 
 #include "screen/Screen.h"
 #include "util/Util.h"
 #include "util/timer/Timer.h"
 #include "conio.h"
+#include "menu/Button.h"
 
+class Button;
 class AnotherWord {
 public:
     AnotherWord();
     ~AnotherWord();
     void start();
+    void close();
     void update(float deltaTime);
     void draw(float deltaTime);
+    // Методы для работы с файлами
     void loadFile(const std::string& path);
     void saveFile(const std::string& path);
-    void clearBuffers();
-private:
-    // Методя для обработки ввода
-    void handleInput(float deltaTime);
-    void handleKeyboard(float deltaTime);
-    void handleMouse(float deltaTime);
-    // Методы для взаимодействия с текстом
-    void writeChar(char ch);
-    void clearChar();
-    void putChar(char ch, Vector vector);
-    // Методы для отрисовки интерфейса программы
+    // Методы для отрисовки интерфейса программы (отрисованные символы не сохраняются в файле)
     void drawChar(char ch, int x, int y, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
     void drawChar(char ch, Vector vector, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
     void drawLine(char ch, int x1, int y1, int x2, int y2, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
     void drawString(std::string str, int x, int y, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
+    // Методы для очистки
+    void clearBuffers();
+private:
+    // Методя для обработки ввода
+    void handleInput(float deltaTime);
+    bool handleButton(float deltaTime); // Вернёт true если совершенно нажатие по кнопке меню
+    void handleKeyboard(float deltaTime);
+    void handleMouse(float deltaTime);
+    // Методы для взаимодействия с текстом (вставленные символы сохраняются в файле)
+    void writeChar(char ch);
+    void clearChar();
+    void putChar(char ch, Vector vector);
     // Логический обработчик перемешения мыши
     void moveCursor(Vector moveVector);
 private:
@@ -52,6 +59,8 @@ private:
     float keyTime;
     INPUT_RECORD inputRecord{};
     DWORD events;
+    // Menu
+    std::vector<Button*> buttons;
     // File
     std::string fileName; // Название текущего файла
     // Buffers

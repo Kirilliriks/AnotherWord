@@ -3,6 +3,7 @@
 //
 
 #include "AnotherWord.h"
+#include "menu/main/FileButton.h"
 
 AnotherWord::AnotherWord() {
     screen = new Screen(120, 40);
@@ -14,18 +15,32 @@ AnotherWord::AnotherWord() {
     lastKey = 0;
     keyTime = 0;
     events = 0;
-    fileName = "";
+
+    // Build menu
+    auto *button = new FileButton(Vector(0, 0));
+    auto *childButton = new Button(Vector(0, 1), "Open file",
+                                   [button](){
+                                       button->setText("Opened!");
+                                   });
+    button->addButton(childButton);
+    childButton = new Button(Vector(0, 2), "Exit",
+                                   [this](){
+                                       this->close();
+                                   });
+    button->addButton(childButton);
+    button->setActive(true);
+    buttons.push_back(button);
+    //
 }
 
 AnotherWord::~AnotherWord() {
+    buttons.clear();
     delete screen;
     delete[] charBuffer;
     delete[] colorBuffer;
 }
 
 void AnotherWord::start() {
-    fileName = "test.txt";
-    loadFile(fileName);
     while (!needClose){
         float deltaTime = deltaTimer.getDelta();
         update(deltaTime);
@@ -36,7 +51,6 @@ void AnotherWord::start() {
 void AnotherWord::loadFile(const std::string& path) {
     std::ifstream in(path);
     if (!in.is_open()) {
-        in.close();
         return;
     }
     std::string data;
@@ -61,16 +75,14 @@ void AnotherWord::saveFile(const std::string& path){
 }
 
 void AnotherWord::update(const float deltaTime) {
+    for (Button *button : buttons){
+        button->update(deltaTime);
+    }
     handleInput(deltaTime);
 }
 
 void AnotherWord::draw(const float deltaTime) {
     clearBuffers();
-    // DrawUI
-    drawLine(' ', 0, 0, 119, 0, Color::White, BackgroundColor::Purple);
-    std::string dTime = "Dt " + std::to_string(deltaTime) + " " + std::to_string(keyTime);
-    drawString(dTime, screenSize.x - dTime.length() - 1,0, Color::White, BackgroundColor::Purple);
-    //
     int stringY;
     for (int y = 1; y < screenSize.y; y++) {
         stringY = y - 1;
@@ -84,6 +96,17 @@ void AnotherWord::draw(const float deltaTime) {
             colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Black;
         }
     }
+
+    // DrawUI
+    drawLine(' ', 0, 0, 119, 0, Color::White, BackgroundColor::Purple);
+    std::string dTime = "Dt " + std::to_string(deltaTime) + " " + std::to_string(keyTime);
+    drawString(dTime, screenSize.x - dTime.length() - 1,0, Color::White, BackgroundColor::Purple);
+
+    for (Button *button : buttons){
+        button->draw(this);
+    }
+    //
+
     screen->draw(charBuffer, colorBuffer);
 }
 
@@ -95,9 +118,11 @@ void AnotherWord::handleInput(const float deltaTime) {
             lastKey = 0;
         }
     }
+
     GetNumberOfConsoleInputEvents(input, &events);
     if (events == 0) return;
     if (ReadConsoleInput(input, &inputRecord, 1, &events)){
+        if (handleButton(deltaTime)) return; // Если была нажата кнопка меню то не обрабатываем остальные входные данные
         switch(inputRecord.EventType) {
             case KEY_EVENT:
                 handleKeyboard(deltaTime);
@@ -110,14 +135,93 @@ void AnotherWord::handleInput(const float deltaTime) {
     } else throw std::runtime_error("ReadConsoleInput error");
 }
 
+void AnotherWord::handleMouse(const float deltaTime) {
+    if (inputRecord.Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
+        Vector moveVector = Vector(inputRecord.Event.MouseEvent.dwMousePosition.X, inputRecord.Event.MouseEvent.dwMousePosition.Y);
+        moveCursor(moveVector);
+    }
+}
+
+bool AnotherWord::handleButton(float deltaTime) {
+    if (inputRecord.Event.KeyEvent.wVirtualKeyCode != VK_RETURN) return false;
+    for (Button *button : buttons){
+        if (button->checkClick(screen->getCursorPos())) return true;
+    }
+    return false;
+}
+
+void AnotherWord::handleKeyboard(const float deltaTime) {
+    boolean write = false;
+    boolean pressed = false;
+    wchar_t ch = ' ';
+    Vector moveVector = Vector(0, 0);
+    switch(inputRecord.Event.KeyEvent.wVirtualKeyCode){
+        case VK_LEFT:
+            if (lastKey == VK_LEFT) break;
+            lastKey = VK_LEFT;
+            pressed = true;
+            if (GetAsyncKeyState(VK_MENU)){
+                moveVector.x = -5;
+            } else moveVector.x = -1;
+            moveCursor(moveVector);
+            break;
+        case VK_RIGHT:
+            if (lastKey == VK_RIGHT) break;
+            lastKey = VK_RIGHT;
+            pressed = true;
+            if (GetAsyncKeyState(VK_MENU)){
+                moveVector.x = 5;
+            } else moveVector.x = 1;
+            moveCursor(moveVector);
+            break;
+        case VK_UP:
+            if (lastKey == VK_UP) break;
+            lastKey = VK_UP;
+            pressed = true;
+            moveVector.y = -1;
+            moveCursor(moveVector);
+            break;
+        case VK_DOWN:
+            if (lastKey == VK_DOWN) break;
+            lastKey = VK_DOWN;
+            pressed = true;
+            moveVector.y = 1;
+            moveCursor(moveVector);
+            break;
+        case VK_BACK:
+            if (lastKey == VK_BACK) break;
+            lastKey = VK_BACK;
+            pressed = true;
+            clearChar();
+            break;
+        case VK_RETURN:
+            moveCursor(Vector(0, 1));
+            break;
+        case VK_ESCAPE:
+            close();
+            break;
+        default:
+            if (!inputRecord.Event.KeyEvent.bKeyDown) break;
+            if (lastKey == inputRecord.Event.KeyEvent.uChar.UnicodeChar) break;
+            lastKey = ch = inputRecord.Event.KeyEvent.uChar.UnicodeChar;
+            write = true;
+            pressed = true;
+            break;
+    }
+    if (pressed) keyTime = 100.0f;
+    if (write) writeChar(ch);
+}
+
 void AnotherWord::writeChar(const char ch) {
     Vector position = screen->getCursorPos();
-    position.y--; // Чтобы обращаться к верной смещённой строчке
+    if (position.y == 0) return;
+    position.y--; // Чтобы обращаться к верной смещённой строчке текста относительно верхней строки-меню
     putChar(ch, position);
     moveCursor(Vector(1, 0));
 }
 
 void AnotherWord::clearChar(){
+    if (screen->getCursorPos().y == 0) return;
     moveCursor(Vector(-1, 0));
     std::string &str = strings[screen->getCursorPos().y - 1];
     if (screen->getCursorPos().x >= str.length()) return;
@@ -201,72 +305,6 @@ void AnotherWord::moveCursor(Vector moveVector){
     screen->moveCursor(moveVector);
 }
 
-void AnotherWord::handleMouse(const float deltaTime) {
-    if (inputRecord.Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
-        Vector moveVector = Vector(inputRecord.Event.MouseEvent.dwMousePosition.X, inputRecord.Event.MouseEvent.dwMousePosition.Y);
-        moveCursor(moveVector);
-    }
-}
-
-void AnotherWord::handleKeyboard(const float deltaTime) {
-    boolean write = false;
-    boolean pressed = false;
-    wchar_t ch = ' ';
-    Vector moveVector = Vector(0, 0);
-    switch(inputRecord.Event.KeyEvent.wVirtualKeyCode){
-        case VK_LEFT:
-            if (lastKey == VK_LEFT) break;
-            lastKey = VK_LEFT;
-            pressed = true;
-            if (GetAsyncKeyState(VK_MENU)){
-                moveVector.x = -5;
-            } else moveVector.x = -1;
-            moveCursor(moveVector);
-            break;
-        case VK_RIGHT:
-            if (lastKey == VK_RIGHT) break;
-            lastKey = VK_RIGHT;
-            pressed = true;
-            if (GetAsyncKeyState(VK_MENU)){
-                moveVector.x = 5;
-            } else moveVector.x = 1;
-            moveCursor(moveVector);
-            break;
-        case VK_UP:
-            if (lastKey == VK_UP) break;
-            lastKey = VK_UP;
-            pressed = true;
-            moveVector.y = -1;
-            moveCursor(moveVector);
-            break;
-        case VK_DOWN:
-            if (lastKey == VK_DOWN) break;
-            lastKey = VK_DOWN;
-            pressed = true;
-            moveVector.y = 1;
-            moveCursor(moveVector);
-            break;
-        case VK_BACK:
-            if (lastKey == VK_BACK) break;
-            lastKey = VK_BACK;
-            pressed = true;
-            clearChar();
-            break;
-        case VK_ESCAPE:
-            saveFile(fileName);
-            exit(0);
-        default:
-            if (!inputRecord.Event.KeyEvent.bKeyDown) break;
-            if (lastKey == inputRecord.Event.KeyEvent.uChar.UnicodeChar) break;
-            lastKey = ch = inputRecord.Event.KeyEvent.uChar.UnicodeChar;
-            write = true;
-            pressed = true;
-            break;
-    }
-    if (pressed) keyTime = 100.0f;
-    if (write) writeChar(ch);
-}
-
 void AnotherWord::clearBuffers() {
     for (int x = 0; x < screenSize.x; x++){
         for (int y = 0; y < screenSize.y; y++){
@@ -274,4 +312,9 @@ void AnotherWord::clearBuffers() {
             colorBuffer[x + y * screenSize.x] = (WORD)Color::White | (WORD)BackgroundColor::Black;
         }
     }
+}
+
+void AnotherWord::close() {
+    //saveFile(fileName);
+    exit(0);
 }
