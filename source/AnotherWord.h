@@ -48,6 +48,8 @@ public:
     // Методы для очистки
     void clearBuffers();
 private:
+    // Методы взаимодействия с экраном
+    Vector getCursorPos();
     // Методы программы
     void prepareOpenFile();
     // Методы для обработки ввода
@@ -86,6 +88,7 @@ private:
 
     // CONSTANTS
     const Vector enterNamePosition = Vector(0, 2);
+    const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,./\?;:'1234567890-_=+`~!@#$%^&*()";
 };
 
 #endif //ANOTHERWORD_ANOTHERWORD_H

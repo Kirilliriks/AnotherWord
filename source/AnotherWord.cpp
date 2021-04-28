@@ -8,6 +8,7 @@
 AnotherWord::AnotherWord() {
     screen = new Screen(120, 40);
     screenSize = screen->getMaxSize();
+    screenOffset = Vector(0, 0);
     charBuffer = new wchar_t[screenSize.x * screenSize.y];
     colorBuffer = new WORD[screenSize.x * screenSize.y];
     input = GetStdHandle(STD_INPUT_HANDLE);
@@ -82,7 +83,7 @@ void AnotherWord::draw(const float deltaTime) {
     clearBuffers();
     int stringY;
     for (int y = 1; y < screenSize.y; y++) {
-        stringY = y - 1;
+        stringY = screenOffset.y + y - 1;
         if (stringY >= strings.size()) break;
         for (int x = 0; x < screenSize.x; x++) {
             int xPos = x + screenOffset.x;
@@ -204,12 +205,18 @@ void AnotherWord::handleKeyboard(const float deltaTime) {
             return;
         default:
             if (!inputRecord.Event.KeyEvent.bKeyDown) return;
-            writeChar(inputRecord.Event.KeyEvent.uChar.UnicodeChar);
+            if (alphabet.find_first_of(inputRecord.Event.KeyEvent.uChar.UnicodeChar) != std::string::npos) writeChar(inputRecord.Event.KeyEvent.uChar.UnicodeChar);
             break;
     }
     if (moveVector.x != 0 || moveVector.y != 0) moveCursor(moveVector);
     lastKey = inputRecord.Event.KeyEvent.wVirtualKeyCode;
     keyTime = 80.0f;
+}
+
+Vector AnotherWord::getCursorPos() {
+    Vector result = screen->getCursorPos() + screenOffset;
+    result.y--;
+    return result;
 }
 
 void AnotherWord::writeChar(const char ch) {
@@ -218,9 +225,8 @@ void AnotherWord::writeChar(const char ch) {
         moveCursor(Vector(1, 0));
         return;
     }
-    Vector position = screen->getCursorPos();
-    if (position.y == 0) return;
-    position.y--; // Чтобы обращаться к верной смещённой строчке текста относительно верхней строки-меню
+    Vector position = getCursorPos();
+    if (position.y == -1) return;
     putChar(ch, position);
     moveCursor(Vector(1, 0));
 }
@@ -231,12 +237,14 @@ void AnotherWord::clearChar(){
         moveCursor(Vector(-1, 0));
         return;
     }
-    if (screen->getCursorPos().y == 0) return;
+    Vector position = getCursorPos();
+    if (position.y == -1) return;
+    position.x--;
     moveCursor(Vector(-1, 0));
-    if (screen->getCursorPos().y >= strings.size()) return;
-    std::string &str = strings[screen->getCursorPos().y - 1];
-    if (screen->getCursorPos().x >= str.length()) return;
-    str.erase(screen->getCursorPos().x, 1);
+    if (position.y >= strings.size()) return;
+    std::string &str = strings[position.y];
+    if (position.x >= str.length()) return;
+    str.erase(position.x, 1);
 }
 
 void AnotherWord::putChar(const char ch, Vector vector) {
@@ -255,8 +263,8 @@ void AnotherWord::putChar(const char ch, Vector vector) {
 }
 
 void AnotherWord::enterMove() {
-    Vector cursorPosition = screen->getCursorPos();
-    if ((cursorPosition.y) >= strings.size()){
+    Vector cursorPosition = getCursorPos();
+    if (cursorPosition.y >= strings.size()){
         setCursorPosition(Vector(0, cursorPosition.y));
         return;
     }
@@ -270,16 +278,18 @@ void AnotherWord::moveCursor(Vector moveVector) {
 void AnotherWord::setCursorPosition(Vector vector) {
     // X
     if (vector.x > screenSize.x){
-        screenOffset.x += vector.x - screenSize.x;
+        screenOffset.x += 1;
     } else if (screenOffset.x > 0 && vector.x < 0){
-        screenOffset.x -= vector.x;
+        screenOffset.x -= 1;
+        if (screenOffset.x < 0) screenOffset.x = 0;
     }
 
     // Y
     if (vector.y > screenSize.y){
-        screenOffset.y += vector.y - screenSize.y;
+        screenOffset.y += 1;
     } else if (screenOffset.y > 0 && vector.y < 0){
-        screenOffset.y -= vector.y;
+        screenOffset.y -= 1;
+        if (screenOffset.y < 0) screenOffset.y = 0;
     }
 
     screen->setCursor(vector);
@@ -329,10 +339,12 @@ void AnotherWord::closeCurrent() {
     saveFile(fileName);
     strings.clear();
     fileName.clear();
+    lastMessage = "File closed";
 }
 
 void AnotherWord::close() {
     closeCurrent();
+    lastMessage = "Goodbye!";
     exit(0);
 }
 
