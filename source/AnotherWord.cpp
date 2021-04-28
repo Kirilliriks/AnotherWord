@@ -15,15 +15,28 @@ AnotherWord::AnotherWord() {
     lastKey = 0;
     keyTime = 0;
     events = 0;
+    lastMessage = "Welcome!";
+    state = State::EDITOR;
 
     // Build menu
     auto *button = new FileButton(Vector(0, 0));
-    auto *childButton = new Button(Vector(0, 1), "Open file",
-                                   [button](){
-                                       button->setText("Opened!");
-                                   });
+    Button *childButton = nullptr;
+    childButton = new Button(Vector(0, 1), "Open file",
+                 [this](){
+                     this->prepareOpenFile();
+                 });
     button->addButton(childButton);
-    childButton = new Button(Vector(0, 2), "Exit",
+    childButton = new Button(Vector(0, 2), "Save file",
+                             [this](){
+                                 this->saveFile(fileName);
+                             });
+    button->addButton(childButton);
+    childButton = new Button(Vector(0, 3), "Close file",
+                             [this](){
+                                 this->closeCurrent();
+                             });
+    button->addButton(childButton);
+    childButton = new Button(Vector(0, 4), "Exit",
                                    [this](){
                                        this->close();
                                    });
@@ -48,38 +61,21 @@ void AnotherWord::start() {
     }
 }
 
-void AnotherWord::loadFile(const std::string& path) {
-    std::ifstream in(path);
-    if (!in.is_open()) {
-        return;
-    }
-    std::string data;
-    while (!in.eof()) {
-        std::getline(in, data);
-        strings.push_back(data);
-    }
-    in.close();
-}
-
-void AnotherWord::saveFile(const std::string& path){
-    std::ofstream out(path);
-    if (!out.is_open()){
-        out.close();
-        return;
-    }
-    for (auto &string : strings){
-        out << string;
-        out << std::endl;
-    }
-    out.close();
-}
-
 void AnotherWord::update(const float deltaTime) {
     for (Button *button : buttons){
         button->update(deltaTime);
     }
+
     handleInput(deltaTime);
+    FlushConsoleInputBuffer(input);
 }
+
+void AnotherWord::prepareOpenFile() {
+    closeCurrent();
+    state = State::OPEN_FILE;
+    setCursorPosition(Vector(0, 15));
+}
+
 
 void AnotherWord::draw(const float deltaTime) {
     clearBuffers();
@@ -98,14 +94,17 @@ void AnotherWord::draw(const float deltaTime) {
     }
 
     // DrawUI
-    drawLine(' ', 0, 0, 119, 0, Color::White, BackgroundColor::Purple);
-    std::string dTime = "Dt " + std::to_string(deltaTime) + " " + std::to_string(keyTime);
-    drawString(dTime, screenSize.x - dTime.length() - 1,0, Color::White, BackgroundColor::Purple);
+    drawLine(' ', 0, 0, screenSize.x - 1, 0, Color::White, BackgroundColor::Purple);
+    drawString(lastMessage, screenSize.x - lastMessage.length() - 1, 0, Color::White, BackgroundColor::Purple);
 
     for (Button *button : buttons){
         button->draw(this);
     }
     //
+
+    if (state == State::OPEN_FILE){
+        drawString(fileName, 0, 15, Color::White, BackgroundColor::Black);
+    }
 
     screen->draw(charBuffer, colorBuffer);
 }
@@ -113,7 +112,7 @@ void AnotherWord::draw(const float deltaTime) {
 void AnotherWord::handleInput(const float deltaTime) {
     if (keyTime != 0){
         keyTime -= deltaTime;
-        if (keyTime < 0) {
+        if (keyTime <= 0) {
             keyTime = 0;
             lastKey = 0;
         }
@@ -123,6 +122,11 @@ void AnotherWord::handleInput(const float deltaTime) {
     if (events == 0) return;
     if (ReadConsoleInput(input, &inputRecord, 1, &events)){
         if (handleButton(deltaTime)) return; // Если была нажата кнопка меню то не обрабатываем остальные входные данные
+        if (lastKey == inputRecord.Event.KeyEvent.wVirtualKeyCode) return;
+        if (state == State::OPEN_FILE){
+            handleFileName();
+            return;
+        }
         switch(inputRecord.EventType) {
             case KEY_EVENT:
                 handleKeyboard(deltaTime);
@@ -131,8 +135,24 @@ void AnotherWord::handleInput(const float deltaTime) {
                 handleMouse(deltaTime);
                 break;
         }
-        FlushConsoleInputBuffer(input);
     } else throw std::runtime_error("ReadConsoleInput error");
+}
+
+void AnotherWord::handleFileName() {
+    switch(inputRecord.Event.KeyEvent.wVirtualKeyCode) {
+        case VK_RETURN: // Пользователь закончил ввод имени файла
+            state = State::EDITOR;
+            loadFile(fileName);
+            break;
+        case VK_BACK:
+            clearChar();
+            break;
+        default:
+            if (!inputRecord.Event.KeyEvent.bKeyDown) return;
+            lastKey = inputRecord.Event.KeyEvent.wVirtualKeyCode;
+            keyTime = 80.0f;
+            writeChar(inputRecord.Event.KeyEvent.uChar.UnicodeChar);
+    }
 }
 
 void AnotherWord::handleMouse(const float deltaTime) {
@@ -145,74 +165,58 @@ void AnotherWord::handleMouse(const float deltaTime) {
 bool AnotherWord::handleButton(float deltaTime) {
     if (inputRecord.Event.KeyEvent.wVirtualKeyCode != VK_RETURN) return false;
     for (Button *button : buttons){
-        if (button->checkClick(screen->getCursorPos())) return true;
+        if (button->checkClick(screen->getCursorPos())) {
+            lastKey = VK_RETURN;
+            return true;
+        }
     }
     return false;
 }
 
 void AnotherWord::handleKeyboard(const float deltaTime) {
-    boolean write = false;
-    boolean pressed = false;
-    wchar_t ch = ' ';
     Vector moveVector = Vector(0, 0);
     switch(inputRecord.Event.KeyEvent.wVirtualKeyCode){
         case VK_LEFT:
-            if (lastKey == VK_LEFT) break;
-            lastKey = VK_LEFT;
-            pressed = true;
             if (GetAsyncKeyState(VK_MENU)){
                 moveVector.x = -5;
             } else moveVector.x = -1;
-            moveCursor(moveVector);
             break;
         case VK_RIGHT:
-            if (lastKey == VK_RIGHT) break;
-            lastKey = VK_RIGHT;
-            pressed = true;
             if (GetAsyncKeyState(VK_MENU)){
                 moveVector.x = 5;
             } else moveVector.x = 1;
-            moveCursor(moveVector);
             break;
         case VK_UP:
-            if (lastKey == VK_UP) break;
-            lastKey = VK_UP;
-            pressed = true;
             moveVector.y = -1;
-            moveCursor(moveVector);
             break;
         case VK_DOWN:
-            if (lastKey == VK_DOWN) break;
-            lastKey = VK_DOWN;
-            pressed = true;
             moveVector.y = 1;
-            moveCursor(moveVector);
             break;
         case VK_BACK:
-            if (lastKey == VK_BACK) break;
-            lastKey = VK_BACK;
-            pressed = true;
             clearChar();
             break;
         case VK_RETURN:
-            moveCursor(Vector(0, 1));
+            // TODO change to true enter
+            moveVector.y = 1;
             break;
         case VK_ESCAPE:
             close();
-            break;
+            return;
         default:
-            if (!inputRecord.Event.KeyEvent.bKeyDown) break;
-            if (lastKey == inputRecord.Event.KeyEvent.uChar.UnicodeChar) break;
-            lastKey = ch = inputRecord.Event.KeyEvent.uChar.UnicodeChar;
-            write = true;
-            pressed = true;
+            if (!inputRecord.Event.KeyEvent.bKeyDown) return;
+            writeChar(inputRecord.Event.KeyEvent.uChar.UnicodeChar);
             break;
     }
-    if (pressed) keyTime = 100.0f;
-    if (write) writeChar(ch);
+    if (moveVector.x != 0 || moveVector.y != 0) moveCursor(moveVector);
+    lastKey = inputRecord.Event.KeyEvent.wVirtualKeyCode;
+    keyTime = 80.0f;
 }
 
 void AnotherWord::writeChar(const char ch) {
+    if (state == State::OPEN_FILE){
+        fileName.push_back(ch);
+        return;
+    }
     Vector position = screen->getCursorPos();
     if (position.y == 0) return;
     position.y--; // Чтобы обращаться к верной смещённой строчке текста относительно верхней строки-меню
@@ -221,6 +225,10 @@ void AnotherWord::writeChar(const char ch) {
 }
 
 void AnotherWord::clearChar(){
+    if (state == State::OPEN_FILE){
+        if (fileName.length() >= 1) fileName.erase(fileName.length() - 1);
+        return;
+    }
     if (screen->getCursorPos().y == 0) return;
     moveCursor(Vector(-1, 0));
     std::string &str = strings[screen->getCursorPos().y - 1];
@@ -282,27 +290,25 @@ void AnotherWord::drawChar(char ch, Vector vector, Color color, BackgroundColor 
 }
 
 void AnotherWord::moveCursor(Vector moveVector){
-    Vector endMove = moveVector;
+    setCursorPosition(screen->getCursorPos() + moveVector);
+}
 
+void AnotherWord::setCursorPosition(Vector vector) {
     // X
-    if (screen->getCursorPos().x + moveVector.x > screenSize.x){
-        screenOffset.x += 1;
-        endMove.x -= 1;
-    } else if (screenOffset.x > 0 && screen->getCursorPos().x + moveVector.x < 0){
-        screenOffset.x -= 1;
-        endMove.x += 1;
+    if (vector.x > screenSize.x){
+        screenOffset.x += vector.x - screenSize.x;
+    } else if (screenOffset.x > 0 && vector.x < 0){
+        screenOffset.x -= vector.x;
     }
 
     // Y
-    if (screen->getCursorPos().y + moveVector.y > screenSize.y){
-        screenOffset.y += 1;
-        endMove.y -= 1;
-    } else if (screenOffset.y > 0 && screen->getCursorPos().y + moveVector.y < 0){
-        screenOffset.y -= 1;
-        endMove.y += 1;
+    if (vector.y > screenSize.y){
+        screenOffset.y += vector.y - screenSize.y;
+    } else if (screenOffset.y > 0 && vector.y < 0){
+        screenOffset.y -= vector.y;
     }
 
-    screen->moveCursor(moveVector);
+    screen->setCursor(vector);
 }
 
 void AnotherWord::clearBuffers() {
@@ -314,7 +320,44 @@ void AnotherWord::clearBuffers() {
     }
 }
 
+void AnotherWord::loadFile(const std::string& path) {
+    std::ifstream in(path);
+    if (!in.is_open()) {
+        lastMessage = "File not found";
+        return;
+    }
+    std::string data;
+    while (!in.eof()) {
+        std::getline(in, data);
+        strings.push_back(data);
+    }
+    in.close();
+    lastMessage = "File open";
+}
+
+void AnotherWord::saveFile(const std::string& path){
+    if (fileName.empty()) return;
+
+    std::ofstream out(path);
+    if (!out.is_open()){
+        lastMessage = "Can't save file";
+        return;
+    }
+    for (auto &string : strings){
+        out << string;
+        out << std::endl;
+    }
+    out.close();
+    lastMessage = "File saved";
+}
+
+void AnotherWord::closeCurrent() {
+    saveFile(fileName);
+    strings.clear();
+    fileName.clear();
+}
+
 void AnotherWord::close() {
-    //saveFile(fileName);
+    closeCurrent();
     exit(0);
 }

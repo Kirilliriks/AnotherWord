@@ -61,12 +61,15 @@ void Button::onClick() {
 
 bool Button::checkClick(Vector clickPosition) {
     if (!isActive()) return false;
-    if (clickPosition.y == position.y && clickPosition.x >= position.x && clickPosition.x < (position.x + (text.length() - 1))){
+    if (clickPosition.y == position.y && clickPosition.x >= position.x && clickPosition.x < (position.x + text.length())){
         if (clickTime == 0) onClick();
         return true;
     }
     for (Button *button : buttons){
-        if (button->checkClick(clickPosition)) return true;
+        if (button->checkClick(clickPosition)) {
+            toggleButtons();
+            return true;
+        }
     }
     return false;
 }

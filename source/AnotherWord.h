@@ -18,9 +18,15 @@
 #include "conio.h"
 #include "menu/Button.h"
 
+
 class Button;
 class AnotherWord {
 public:
+    enum State{
+        EDITOR,
+        OPEN_FILE
+    };
+
     AnotherWord();
     ~AnotherWord();
     void start();
@@ -35,11 +41,17 @@ public:
     void drawChar(char ch, Vector vector, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
     void drawLine(char ch, int x1, int y1, int x2, int y2, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
     void drawString(std::string str, int x, int y, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
+    // Логический обработчик перемешения мыши
+    void moveCursor(Vector moveVector);
+    void setCursorPosition(Vector vector);
     // Методы для очистки
     void clearBuffers();
 private:
-    // Методя для обработки ввода
+    // Методы программы
+    void prepareOpenFile();
+    // Методы для обработки ввода
     void handleInput(float deltaTime);
+    void handleFileName();
     bool handleButton(float deltaTime); // Вернёт true если совершенно нажатие по кнопке меню
     void handleKeyboard(float deltaTime);
     void handleMouse(float deltaTime);
@@ -47,8 +59,7 @@ private:
     void writeChar(char ch);
     void clearChar();
     void putChar(char ch, Vector vector);
-    // Логический обработчик перемешения мыши
-    void moveCursor(Vector moveVector);
+    void closeCurrent();
 private:
     Vector screenSize;
     HANDLE input;
@@ -59,8 +70,10 @@ private:
     float keyTime;
     INPUT_RECORD inputRecord{};
     DWORD events;
+    State state{};
     // Menu
     std::vector<Button*> buttons;
+    std::string lastMessage;
     // File
     std::string fileName; // Название текущего файла
     // Buffers
@@ -70,6 +83,5 @@ private:
     // WordScreen variable
     Vector screenOffset;
 };
-
 
 #endif //ANOTHERWORD_ANOTHERWORD_H

@@ -18,6 +18,7 @@ public:
     ~Screen();
     void draw(wchar_t *charBuffer, WORD *colorBuffer); // Отрисовывает экран консоль;
     void moveCursor(Vector vector);
+    void setCursor(Vector vector);
     Vector getMaxSize();
     Vector getCursorPos();
     HANDLE *getConsole();

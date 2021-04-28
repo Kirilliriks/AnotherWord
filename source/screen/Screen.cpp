@@ -35,9 +35,13 @@ void Screen::draw(wchar_t *charBuffer, WORD *colorBuffer) {
 }
 
 void Screen::moveCursor(Vector vector) {
-    Vector newPos = cursorPos + vector;
+    setCursor(cursorPos + vector);
+}
+
+void Screen::setCursor(Vector vector) {
+    Vector newPos = vector;
     if (newPos.x < 0 || newPos.x > width || newPos.y < 0 || newPos.y > height) return;
-    cursorPos += vector;
+    cursorPos = vector;
     SetConsoleCursorPosition(console, cursorPos);
 }
 
