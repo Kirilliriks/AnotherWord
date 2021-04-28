@@ -44,6 +44,7 @@ public:
     // Логический обработчик перемешения мыши
     void moveCursor(Vector moveVector);
     void setCursorPosition(Vector vector);
+    void enterMove();
     // Методы для очистки
     void clearBuffers();
 private:
@@ -82,6 +83,9 @@ private:
     WORD *colorBuffer;
     // WordScreen variable
     Vector screenOffset;
+
+    // CONSTANTS
+    const Vector enterNamePosition = Vector(0, 2);
 };
 
 #endif //ANOTHERWORD_ANOTHERWORD_H

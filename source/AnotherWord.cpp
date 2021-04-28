@@ -20,7 +20,7 @@ AnotherWord::AnotherWord() {
 
     // Build menu
     auto *button = new FileButton(Vector(0, 0));
-    Button *childButton = nullptr;
+    Button *childButton;
     childButton = new Button(Vector(0, 1), "Open file",
                  [this](){
                      this->prepareOpenFile();
@@ -44,6 +44,7 @@ AnotherWord::AnotherWord() {
     button->setActive(true);
     buttons.push_back(button);
     //
+    setCursorPosition((Vector(0,0)));
 }
 
 AnotherWord::~AnotherWord() {
@@ -73,7 +74,7 @@ void AnotherWord::update(const float deltaTime) {
 void AnotherWord::prepareOpenFile() {
     closeCurrent();
     state = State::OPEN_FILE;
-    setCursorPosition(Vector(0, 15));
+    setCursorPosition(enterNamePosition);
 }
 
 
@@ -95,7 +96,7 @@ void AnotherWord::draw(const float deltaTime) {
 
     // DrawUI
     drawLine(' ', 0, 0, screenSize.x - 1, 0, Color::White, BackgroundColor::Purple);
-    drawString(lastMessage, screenSize.x - lastMessage.length() - 1, 0, Color::White, BackgroundColor::Purple);
+    drawString(lastMessage, screenSize.x - lastMessage.length(), 0, Color::White, BackgroundColor::LightBlue);
 
     for (Button *button : buttons){
         button->draw(this);
@@ -103,7 +104,7 @@ void AnotherWord::draw(const float deltaTime) {
     //
 
     if (state == State::OPEN_FILE){
-        drawString(fileName, 0, 15, Color::White, BackgroundColor::Black);
+        drawString(fileName, enterNamePosition.x, enterNamePosition.y, Color::White, BackgroundColor::Black);
     }
 
     screen->draw(charBuffer, colorBuffer);
@@ -196,8 +197,7 @@ void AnotherWord::handleKeyboard(const float deltaTime) {
             clearChar();
             break;
         case VK_RETURN:
-            // TODO change to true enter
-            moveVector.y = 1;
+            enterMove();
             break;
         case VK_ESCAPE:
             close();
@@ -215,6 +215,7 @@ void AnotherWord::handleKeyboard(const float deltaTime) {
 void AnotherWord::writeChar(const char ch) {
     if (state == State::OPEN_FILE){
         fileName.push_back(ch);
+        moveCursor(Vector(1, 0));
         return;
     }
     Vector position = screen->getCursorPos();
@@ -227,13 +228,15 @@ void AnotherWord::writeChar(const char ch) {
 void AnotherWord::clearChar(){
     if (state == State::OPEN_FILE){
         if (fileName.length() >= 1) fileName.erase(fileName.length() - 1);
+        moveCursor(Vector(-1, 0));
         return;
     }
     if (screen->getCursorPos().y == 0) return;
     moveCursor(Vector(-1, 0));
+    if (screen->getCursorPos().y >= strings.size()) return;
     std::string &str = strings[screen->getCursorPos().y - 1];
     if (screen->getCursorPos().x >= str.length()) return;
-    str.erase(screen->getCursorPos().x);
+    str.erase(screen->getCursorPos().x, 1);
 }
 
 void AnotherWord::putChar(const char ch, Vector vector) {
@@ -251,45 +254,16 @@ void AnotherWord::putChar(const char ch, Vector vector) {
     strings[vector.y].insert(vector.x, 1, ch);
 }
 
-// Алгоритм Брезенхема
-void AnotherWord::drawLine(const char ch, int x1, int y1, int x2, int y2, Color color, BackgroundColor backColor) {
-    const int deltaX = abs(x2 - x1);
-    const int deltaY = abs(y2 - y1);
-    const int signX = x1 < x2 ? 1 : -1;
-    const int signY = y1 < y2 ? 1 : -1;
-    int error = deltaX - deltaY;
-    drawChar(ch, x2, y2, color, backColor);
-    while (x1 != x2 || y1 != y2) {
-        drawChar(ch, x1, y1, color, backColor);
-        int error2 = error * 2;
-        if (error2 > -deltaY){
-            error -= deltaY;
-            x1 += signX;
-        }
-        if (error2 < deltaX){
-            error += deltaX;
-            y1 += signY;
-        }
+void AnotherWord::enterMove() {
+    Vector cursorPosition = screen->getCursorPos();
+    if ((cursorPosition.y) >= strings.size()){
+        setCursorPosition(Vector(0, cursorPosition.y));
+        return;
     }
+    setCursorPosition(Vector(strings[cursorPosition.y].length(), cursorPosition.y + 1));
 }
 
-void AnotherWord::drawString(std::string str, int x, int y, Color color, BackgroundColor backColor) {
-    for (int i = 0; i < str.length(); i++) {
-        drawChar(str[i], x + i, y, color, backColor);
-    }
-}
-
-void AnotherWord::drawChar(char ch, int x, int y, Color color, BackgroundColor backColor) {
-    drawChar(ch, Vector(x, y), color, backColor);
-}
-
-void AnotherWord::drawChar(char ch, Vector vector, Color color, BackgroundColor backColor) {
-    if (vector.x < 0 || vector.x > screenSize.x || vector.y < 0 || vector.y > screenSize.y) return;
-    charBuffer[vector.x + vector.y * screenSize.x] = ch;
-    colorBuffer[vector.x + vector.y * screenSize.x] = (WORD)color | (WORD)backColor;
-}
-
-void AnotherWord::moveCursor(Vector moveVector){
+void AnotherWord::moveCursor(Vector moveVector) {
     setCursorPosition(screen->getCursorPos() + moveVector);
 }
 
@@ -360,4 +334,42 @@ void AnotherWord::closeCurrent() {
 void AnotherWord::close() {
     closeCurrent();
     exit(0);
+}
+
+// Алгоритм Брезенхема
+void AnotherWord::drawLine(const char ch, int x1, int y1, int x2, int y2, Color color, BackgroundColor backColor) {
+    const int deltaX = abs(x2 - x1);
+    const int deltaY = abs(y2 - y1);
+    const int signX = x1 < x2 ? 1 : -1;
+    const int signY = y1 < y2 ? 1 : -1;
+    int error = deltaX - deltaY;
+    drawChar(ch, x2, y2, color, backColor);
+    while (x1 != x2 || y1 != y2) {
+        drawChar(ch, x1, y1, color, backColor);
+        int error2 = error * 2;
+        if (error2 > -deltaY){
+            error -= deltaY;
+            x1 += signX;
+        }
+        if (error2 < deltaX){
+            error += deltaX;
+            y1 += signY;
+        }
+    }
+}
+
+void AnotherWord::drawString(std::string str, int x, int y, Color color, BackgroundColor backColor) {
+    for (int i = 0; i < str.length(); i++) {
+        drawChar(str[i], x + i, y, color, backColor);
+    }
+}
+
+void AnotherWord::drawChar(char ch, int x, int y, Color color, BackgroundColor backColor) {
+    drawChar(ch, Vector(x, y), color, backColor);
+}
+
+void AnotherWord::drawChar(char ch, Vector vector, Color color, BackgroundColor backColor) {
+    if (vector.x < 0 || vector.x > screenSize.x || vector.y < 0 || vector.y > screenSize.y) return;
+    charBuffer[vector.x + vector.y * screenSize.x] = ch;
+    colorBuffer[vector.x + vector.y * screenSize.x] = (WORD)color | (WORD)backColor;
 }
