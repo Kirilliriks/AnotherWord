@@ -12,6 +12,7 @@ Button::Button(Vector position, std::string text, std::string groupName, Another
     this->active = false;
     this->clickTime = 0;
     this->toggled = false;
+    this->color = BackgroundColor::LightBlue;
 }
 
 Button::Button(Vector position, std::string text, std::string groupName, AnotherWord *anotherWord, std::function<void(void)> function){
@@ -23,6 +24,7 @@ Button::Button(Vector position, std::string text, std::string groupName, Another
     this->active = false;
     this->clickTime = 0;
     this->toggled = false;
+    this->color = BackgroundColor::LightBlue;
 }
 
 void Button::update(float deltaTime) {
@@ -37,7 +39,7 @@ void Button::update(float deltaTime) {
 }
 
 void Button::draw(AnotherWord *anotherWord) {
-    anotherWord->getTextEditor().drawString(getText(), getPosition().x, getPosition().y, Color::White, toggled ? BackgroundColor::Red : BackgroundColor::Green);
+    anotherWord->getTextEditor().drawString(getText(), getPosition().x, getPosition().y, Color::White, toggled ? BackgroundColor::Red : color);
     for (Button *button : buttons){
         if (!button->isActive()) continue;
         button->draw(anotherWord);

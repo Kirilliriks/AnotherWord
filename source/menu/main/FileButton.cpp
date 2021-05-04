@@ -5,6 +5,8 @@
 #include "FileButton.h"
 
 FileButton::FileButton(Vector position, AnotherWord *anotherWord) : Button(position, "Menu", "Menu", anotherWord){
+    color = BackgroundColor::Green;
+
     this->function = [this](){
         this->toggleButtons();
     };

@@ -5,6 +5,8 @@
 #include "TextButton.h"
 
 TextButton::TextButton(Vector position, AnotherWord *anotherWord) : Button(position, "File", "File", anotherWord){
+    color = BackgroundColor::Green;
+
     this->function = [this](){
         this->toggleButtons();
     };

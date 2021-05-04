@@ -40,6 +40,7 @@ protected:
     std::string groupName; // Название группы кнопок к примеру "Menu"
     std::function<void(void)> function; // Функция стандартно выполняемая при клике на кнопку
 
+    BackgroundColor color;
     bool active; // Кнопка активна
     bool toggled; // Если true то кнопка раскрыла свои подкнопки
     float clickTime; // Время через которое кнопку можно нажать ещё раз
