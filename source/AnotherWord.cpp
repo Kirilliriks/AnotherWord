@@ -56,7 +56,7 @@ void AnotherWord::preInputString(State state){
 }
 
 void AnotherWord::findSubstring(std::string subString) {
-    boolean find = true;
+    boolean find = false;
     std::vector<std::string> &strings = textEditor->getData();
     for (std::string str : textEditor->getData()){
         int pos = str.find(subString);
@@ -123,7 +123,6 @@ void AnotherWord::handleInput(const float deltaTime) {
             handleStringInput();
             return;
         }
-        lastMessage = inputRecord.EventType;
         switch(inputRecord.EventType) {
             case KEY_EVENT:
                 handleKeyboard(deltaTime);

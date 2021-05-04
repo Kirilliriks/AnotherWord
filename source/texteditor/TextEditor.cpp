@@ -26,8 +26,10 @@ void TextEditor::preDraw() {
         if (stringY >= strings.size()) break;
         for (int x = 0; x < screenSize.x; x++) {
             int xPos = x + screenOffset.x;
-            if (xPos >= strings[stringY].length()) break;
-            char ch = strings[stringY].at(xPos);
+            if (xPos >= strings[stringY].length()) break;\
+            char ch;
+            if (strings[stringY].at(xPos) < -1 || strings[stringY].at(xPos) > 255) ch = ' ';
+            else ch = strings[stringY].at(xPos);
             if (ch == '\0') continue;
             charBuffer[x + y * screenSize.x] = ch;
             if (std::isdigit(ch)) colorBuffer[x + y * screenSize.x] = (WORD) Color::Orange | (WORD) BackgroundColor::Black;
@@ -54,10 +56,11 @@ void TextEditor::writeChar(const char ch) {
 
 void TextEditor::clearChar(){
     if (anotherWord->state != AnotherWord::State::EDITOR) {
-        if (anotherWord->state == AnotherWord::State::FIND_SUB_STRING)
+        if (anotherWord->state == AnotherWord::State::FIND_SUB_STRING){
             if (anotherWord->inputString.length() >= 1) anotherWord->inputString.erase(anotherWord->inputString.length() - 1);
-        else
+        } else {
             if (anotherWord->getFileName().length() >= 1) anotherWord->getFileName().erase(anotherWord->getFileName().length() - 1);
+        }
         moveCursor(Vector(-1, 0));
         return;
     }
