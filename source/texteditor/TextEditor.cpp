@@ -15,10 +15,6 @@ TextEditor::TextEditor(AnotherWord *anotherWord) {
     setCursorPosition((Vector(0,0)));
 }
 
-void TextEditor::update() {
-
-}
-
 void TextEditor::draw() {
     screen->draw(charBuffer, colorBuffer);
 }

@@ -34,10 +34,6 @@ void Screen::draw(wchar_t *charBuffer, WORD *colorBuffer) {
     WriteConsoleOutputAttribute(console, colorBuffer, width * height, {0, 0}, &dwordBytes);
 }
 
-void Screen::moveCursor(Vector vector) {
-    setCursor(cursorPos + vector);
-}
-
 void Screen::setCursor(Vector vector) {
     Vector newPos = vector;
     if (newPos.x < 0 || newPos.x > width || newPos.y < 0 || newPos.y > height) return;
@@ -51,14 +47,6 @@ Vector Screen::getMaxSize() {
 
 Vector Screen::getCursorPosition() {
     return cursorPos;
-}
-
-HANDLE *Screen::getConsole() {
-    return &console;
-}
-
-HANDLE *Screen::getInput() {
-    return &inputHandle;
 }
 
 Screen::~Screen() = default;

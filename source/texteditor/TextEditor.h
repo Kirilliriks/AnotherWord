@@ -14,7 +14,6 @@ class TextEditor {
 public:
     TextEditor(AnotherWord *anotherWord);
     ~TextEditor();
-    void update();
     void preDraw();
     void draw();
     // Методы для отрисовки интерфейса программы (отрисованные символы не сохраняются в файле)
