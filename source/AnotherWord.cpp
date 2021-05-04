@@ -60,7 +60,7 @@ void AnotherWord::findSubstring(std::string subString) {
     std::vector<std::string> &strings = textEditor->getData();
     for (std::string str : textEditor->getData()){
         int pos = str.find(subString);
-        if (pos < 0) break;
+        if (pos < 0) continue;
         auto it = std::find(strings.begin(), strings.end(), str);
         if (it != strings.end()){
             auto idx = std::distance(strings.begin(), it);
