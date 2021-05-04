@@ -56,6 +56,7 @@ void AnotherWord::preInputString(State state){
 }
 
 void AnotherWord::findSubstring(std::string subString) {
+    boolean find = true;
     std::vector<std::string> &strings = textEditor->getData();
     for (std::string str : textEditor->getData()){
         int pos = str.find(subString);
@@ -64,8 +65,12 @@ void AnotherWord::findSubstring(std::string subString) {
         if (it != strings.end()){
             auto idx = std::distance(strings.begin(), it);
             textEditor->setCursorPosition(Vector(pos, idx + 1));
+            find = true;
+            break;
         }
     }
+    if (find) lastMessage = "Find finish";
+    else lastMessage = "Not found";
     inputString.clear();
     state = State::EDITOR;
 }
@@ -110,6 +115,7 @@ void AnotherWord::handleInput(const float deltaTime) {
 
     GetNumberOfConsoleInputEvents(input, &events);
     if (events == 0) return;
+    if (state == State::EDITOR) handleMouse(deltaTime);
     if (ReadConsoleInput(input, &inputRecord, 1, &events)){
         if (handleButton(deltaTime)) return; // Если была нажата кнопка меню то не обрабатываем остальные входные данные
         if (lastKey == inputRecord.Event.KeyEvent.wVirtualKeyCode) return;
@@ -117,15 +123,35 @@ void AnotherWord::handleInput(const float deltaTime) {
             handleStringInput();
             return;
         }
+        lastMessage = inputRecord.EventType;
         switch(inputRecord.EventType) {
             case KEY_EVENT:
                 handleKeyboard(deltaTime);
                 break;
-            case MOUSE_EVENT:
-                handleMouse(deltaTime);
-                break;
         }
     } else throw std::runtime_error("ReadConsoleInput error");
+}
+
+void AnotherWord::handleMouse(const float deltaTime) {
+    if (inputRecord.Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
+        lastKey = 0;
+        Vector moveVector = Vector(inputRecord.Event.MouseEvent.dwMousePosition.X, inputRecord.Event.MouseEvent.dwMousePosition.Y);
+        textEditor->setCursorPosition(moveVector);
+        handleButton(deltaTime);
+    }
+}
+
+bool AnotherWord::handleButton(float deltaTime) {
+    if (lastKey == VK_RETURN) return false;
+    if (inputRecord.Event.KeyEvent.wVirtualKeyCode != VK_RETURN && inputRecord.Event.MouseEvent.dwButtonState != FROM_LEFT_1ST_BUTTON_PRESSED) return false;
+    for (Button *button : buttons){
+        if (button->checkClick(textEditor->getCursorPosition())) {
+            lastButton = button;
+            lastKey = VK_RETURN;
+            return true;
+        }
+    }
+    return false;
 }
 
 void AnotherWord::handleStringInput() {
@@ -154,25 +180,6 @@ void AnotherWord::handleStringInput() {
     }
     lastKey = inputRecord.Event.KeyEvent.wVirtualKeyCode;
     keyTime = 160.0f;
-}
-
-void AnotherWord::handleMouse(const float deltaTime) {
-    if (inputRecord.Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
-        Vector moveVector = Vector(inputRecord.Event.MouseEvent.dwMousePosition.X, inputRecord.Event.MouseEvent.dwMousePosition.Y);
-        textEditor->moveCursor(moveVector);
-    }
-}
-
-bool AnotherWord::handleButton(float deltaTime) {
-    if (inputRecord.Event.KeyEvent.wVirtualKeyCode != VK_RETURN) return false;
-    for (Button *button : buttons){
-        if (button->checkClick(textEditor->getCursorPosition())) {
-            lastButton = button;
-            lastKey = VK_RETURN;
-            return true;
-        }
-    }
-    return false;
 }
 
 void AnotherWord::handleKeyboard(const float deltaTime) {
@@ -224,8 +231,8 @@ TextEditor &AnotherWord::getTextEditor() {
     return *textEditor;
 }
 
-void AnotherWord::loadFile(const std::string& path) {
-    std::ifstream in(path);
+void AnotherWord::loadFile(const std::string& fileName) {
+    std::ifstream in(fileName);
     if (!in.is_open()) {
         lastMessage = "File not found";
         return;
@@ -239,7 +246,7 @@ void AnotherWord::loadFile(const std::string& path) {
     lastMessage = "File open";
 }
 
-void AnotherWord::saveFile(const std::string& path){
+void AnotherWord::saveFile(const std::string& fileName){
     if (fileName.empty()) {
         lastMessage = "Enter new file name";
         state = State::NEW_FILE;
@@ -247,7 +254,7 @@ void AnotherWord::saveFile(const std::string& path){
         return;
     }
 
-    std::ofstream out(path);
+    std::ofstream out(fileName);
     if (!out.is_open()){
         lastMessage = "Can't save file";
         return;

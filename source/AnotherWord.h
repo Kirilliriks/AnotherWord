@@ -37,8 +37,8 @@ public:
     void update(float deltaTime);
     void draw(float deltaTime);
     // Методы для работы с файлами
-    void loadFile(const std::string& path);
-    void saveFile(const std::string& path);
+    void loadFile(const std::string& fileName);
+    void saveFile(const std::string& fileName);
     // Методы программы
     void findSubstring(std::string subString);
     void preOpenFile(); // Подготовка к открытию нового файла
