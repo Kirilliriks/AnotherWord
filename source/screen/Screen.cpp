@@ -49,7 +49,7 @@ Vector Screen::getMaxSize() {
     return maxSize;
 }
 
-Vector Screen::getCursorPos() {
+Vector Screen::getCursorPosition() {
     return cursorPos;
 }
 

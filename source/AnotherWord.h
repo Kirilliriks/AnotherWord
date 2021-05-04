@@ -12,20 +12,23 @@
 #include <functional>
 #include <windows.h>
 
-#include "screen/Screen.h"
+#include "texteditor/TextEditor.h"
+#include "screen/char/Color.h"
 #include "util/Util.h"
 #include "util/timer/Timer.h"
 #include "conio.h"
 #include "menu/Button.h"
 
 
+class TextEditor;
 class Button;
 class AnotherWord {
 public:
     enum State{
         EDITOR,
         OPEN_FILE,
-        NEW_FILE
+        NEW_FILE,
+        FIND_SUB_STRING
     };
 
     AnotherWord();
@@ -37,59 +40,43 @@ public:
     // Методы для работы с файлами
     void loadFile(const std::string& path);
     void saveFile(const std::string& path);
-    // Методы для отрисовки интерфейса программы (отрисованные символы не сохраняются в файле)
-    void drawChar(char ch, int x, int y, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
-    void drawChar(char ch, Vector vector, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
-    void drawLine(char ch, int x1, int y1, int x2, int y2, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
-    void drawString(std::string str, int x, int y, Color color = Color::White, BackgroundColor backColor = BackgroundColor::Black);
-    // Логический обработчик перемешения мыши
-    void moveCursor(Vector moveVector);
-    void setCursorPosition(Vector vector);
-    void enterMove();
-    // Методы для очистки
-    void clearBuffers();
-private:
-    // Методы взаимодействия с экраном
-    Vector getCursorPos();
     // Методы программы
-    void prepareOpenFile();
+    void findSubstring(std::string subString);
+    void preOpenFile(); // Подготовка к открытию нового файла
+    void closeCurrent(); // Закрывает текущий файл(без сохранения)
+    void preInputString(State state);
+    // Методы для получения значений приватных полей
+    Button *getLastButton(); // Закрывает последнее открытое меню
+    std::string &getFileName(); // Возвращает название текущего файла
+    TextEditor &getTextEditor(); // Возвращает текстовый редактор
+public:
+    State state{}; // Текущее состояние программы
+    std::string inputString; // Вводимая строка (поиск и другие операции)
+private:
     // Методы для обработки ввода
     void handleInput(float deltaTime);
-    void handleFileName();
+    void handleStringInput();
     bool handleButton(float deltaTime); // Вернёт true если совершенно нажатие по кнопке меню
     void handleKeyboard(float deltaTime);
     void handleMouse(float deltaTime);
-    // Методы для взаимодействия с текстом (вставленные символы сохраняются в файле)
-    void writeChar(char ch);
-    void clearChar();
-    void putChar(char ch, Vector vector);
-    void closeCurrent();
 private:
-    Vector screenSize;
+    TextEditor *textEditor;
     HANDLE input;
-    Screen *screen;
     bool needClose;
     WCHAR lastKey;
     Timer deltaTimer;
     float keyTime;
     INPUT_RECORD inputRecord{};
     DWORD events;
-    State state{};
     // Menu
     std::vector<Button*> buttons;
     std::string lastMessage;
+    Button *lastButton; // Последнее открытое меню
     // File
     std::string fileName; // Название текущего файла
-    // Buffers
-    std::vector<std::string> strings;
-    wchar_t *charBuffer;
-    WORD *colorBuffer;
-    // WordScreen variable
-    Vector screenOffset;
 
     // CONSTANTS
     const Vector enterNamePosition = Vector(0, 2);
-    const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,./\?;:'1234567890-_=+`~!@#$%^&*()";
 };
 
 #endif //ANOTHERWORD_ANOTHERWORD_H

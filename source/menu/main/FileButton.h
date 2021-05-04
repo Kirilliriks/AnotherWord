@@ -9,7 +9,7 @@
 
 class FileButton : public Button {
 public:
-    FileButton(Vector position);
+    FileButton(Vector position, AnotherWord *anotherWord);
     ~FileButton();
 private:
 };

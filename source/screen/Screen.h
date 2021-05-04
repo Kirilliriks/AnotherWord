@@ -20,7 +20,7 @@ public:
     void moveCursor(Vector vector);
     void setCursor(Vector vector);
     Vector getMaxSize();
-    Vector getCursorPos();
+    Vector getCursorPosition();
     HANDLE *getConsole();
     HANDLE *getInput();
 private:

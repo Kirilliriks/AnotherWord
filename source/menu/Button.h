@@ -15,8 +15,8 @@
 class AnotherWord;
 class Button {
 public:
-    Button(Vector position, std::string text);
-    Button(Vector position, std::string text, std::function<void(void)> function);
+    Button(Vector position, std::string text, std::string groupName, AnotherWord *anotherWord);
+    Button(Vector position, std::string text, std::string groupName, AnotherWord *anotherWord, std::function<void(void)> function);
     ~Button();
     void update(float deltaTime);
     void draw(AnotherWord *anotherWord);
@@ -25,20 +25,26 @@ public:
     void setFunction(std::function<void(void)> function);
     virtual void onClick();
     bool checkClick(Vector clickPosition);
-    Vector getPosition();
     void setText(std::string text);
+    Vector getPosition();
     std::string getText();
+    std::string getGroupName();
     void setActive(bool active);
     bool isActive();
+    bool isToggled();
 protected:
-    bool active;
-    bool clicked;
-    float clickTime; // Время через которое кнопку можно нажать ещё раз
+    AnotherWord *anotherWord;
+
     Vector position;
     std::string text;
+    std::string groupName; // Название группы кнопок к примеру "Menu"
     std::function<void(void)> function; // Функция стандартно выполняемая при клике на кнопку
 
-    std::vector<Button*> buttons;
+    bool active; // Кнопка активна
+    bool toggled; // Если true то кнопка раскрыла свои подкнопки
+    float clickTime; // Время через которое кнопку можно нажать ещё раз
+
+    std::vector<Button*> buttons; // Подкнопки
 };
 
 
