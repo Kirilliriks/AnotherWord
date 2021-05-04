@@ -28,10 +28,6 @@ AnotherWord::AnotherWord() {
     //
 }
 
-AnotherWord::~AnotherWord() {
-    buttons.clear();
-}
-
 void AnotherWord::start() {
     while (!needClose){
         float deltaTime = deltaTimer.getDelta();
@@ -85,7 +81,7 @@ void AnotherWord::draw(const float deltaTime) {
     textEditor->drawString("Current: " + fileName, screenSize.x - lastMessage.length() - 10 - fileName.length(), 0, Color::White, BackgroundColor::Cyan);
     std::string stringSize = "Strings: ";
     stringSize += std::to_string(textEditor->getData().size());
-    textEditor->drawString(stringSize, screenSize.x - lastMessage.length() - 21 - fileName.length(), 0, Color::White, BackgroundColor::Cyan);
+    textEditor->drawString(stringSize, screenSize.x - lastMessage.length() - stringSize.length() - 11 - fileName.length(), 0, Color::White, BackgroundColor::Cyan);
 
     for (Button *button : buttons) {
         button->draw(this);
@@ -157,7 +153,7 @@ void AnotherWord::handleStringInput() {
             break;
     }
     lastKey = inputRecord.Event.KeyEvent.wVirtualKeyCode;
-    keyTime = 80.0f;
+    keyTime = 160.0f;
 }
 
 void AnotherWord::handleMouse(const float deltaTime) {
@@ -274,4 +270,10 @@ void AnotherWord::close() {
     closeCurrent();
     lastMessage = "Goodbye!";
     exit(0);
+}
+
+AnotherWord::~AnotherWord() {
+    buttons.clear();
+    delete lastButton;
+    delete textEditor;
 }

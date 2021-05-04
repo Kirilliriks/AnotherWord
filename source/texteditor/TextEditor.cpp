@@ -35,14 +35,14 @@ void TextEditor::preDraw() {
             if (ch == '\0') continue;
             charBuffer[x + y * screenSize.x] = ch;
             if (std::isdigit(ch)) colorBuffer[x + y * screenSize.x] = (WORD) Color::Orange | (WORD) BackgroundColor::Black;
-            else colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Black;
+            else colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Green;
         }
     }
 }
 
 void TextEditor::writeChar(const char ch) {
     if (alphabet.find_first_of(ch) == std::string::npos) return;
-    if (anotherWord->state != AnotherWord::State::EDITOR){
+    if (anotherWord->state != AnotherWord::State::EDITOR) {
         if (anotherWord->state == AnotherWord::State::FIND_SUB_STRING)
             anotherWord->inputString.push_back(ch);
         else
@@ -57,10 +57,11 @@ void TextEditor::writeChar(const char ch) {
 }
 
 void TextEditor::clearChar(){
-    if (anotherWord->state != AnotherWord::State::EDITOR){
-        if (anotherWord->state == AnotherWord::State::FIND_SUB_STRING) {
+    if (anotherWord->state != AnotherWord::State::EDITOR) {
+        if (anotherWord->state == AnotherWord::State::FIND_SUB_STRING)
             if (anotherWord->inputString.length() >= 1) anotherWord->inputString.erase(anotherWord->inputString.length() - 1);
-        } else if (anotherWord->getFileName().length() >= 1) anotherWord->getFileName().erase(anotherWord->getFileName().length() - 1);
+        else
+            if (anotherWord->getFileName().length() >= 1) anotherWord->getFileName().erase(anotherWord->getFileName().length() - 1);
         moveCursor(Vector(-1, 0));
         return;
     }
@@ -68,15 +69,24 @@ void TextEditor::clearChar(){
     if (position.y == -1) return;
     position.x--;
     if (position.x <= -1 && position.y > 0) {
-        if (position.y >= strings.size()){
+        boolean needDelete = true;
+        for (int i = position.y; i < strings.size(); i++) {
+            if (strings.at(i).empty()) continue;
+            if (strings.at(i).find_first_not_of(' ') == std::string::npos) continue;
+            needDelete = false;
+        }
+        if (needDelete) {
+            strings.erase(strings.begin() + position.y, strings.end());
+        }
+        if (position.y > strings.size()) {
             setCursorPosition(Vector(0, position.y)); // Не уменьшаем y на -1 т.к. координаты уже смешены
             return;
         }
         setCursorPosition(Vector(strings[position.y - 1].length(), position.y));  // При обращении к массиву уменьшаем , при установке курсора не уменьшаем y на -1 т.к. координаты уже смешены
         return;
     }
-    moveCursor(Vector(-1, 0));
-    if (position.y >= strings.size()) return;
+    moveCursor(Vector(-1, 0)); // 0
+    if (position.y >= strings.size()) return; // 1
     std::string &str = strings[position.y];
     if (position.x >= str.length()) return;
     str.erase(position.x, 1);

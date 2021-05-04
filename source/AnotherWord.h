@@ -19,7 +19,6 @@
 #include "conio.h"
 #include "menu/Button.h"
 
-
 class TextEditor;
 class Button;
 class AnotherWord {
