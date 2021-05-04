@@ -33,7 +33,7 @@ void TextEditor::preDraw() {
             if (ch == '\0') continue;
             charBuffer[x + y * screenSize.x] = ch;
             if (std::isdigit(ch)) colorBuffer[x + y * screenSize.x] = (WORD) Color::Orange | (WORD) BackgroundColor::Black;
-            else colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Green;
+            else colorBuffer[x + y * screenSize.x] = (WORD) Color::White | (WORD) BackgroundColor::Black;
         }
     }
 }
