@@ -12,7 +12,7 @@ TextEditor::TextEditor(AnotherWord *anotherWord) {
     charBuffer = new wchar_t[screenSize.x * screenSize.y];
     colorBuffer = new WORD[screenSize.x * screenSize.y];
 
-    setCursorPosition((Vector(0,0)));
+    setCursorPosition((Vector(0,1)));
 }
 
 void TextEditor::draw() {
